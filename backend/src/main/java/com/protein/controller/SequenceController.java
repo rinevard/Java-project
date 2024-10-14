@@ -46,17 +46,18 @@ public class SequenceController {
         return sequenceRepository.findByNameContainingOrSequenceContaining(query, query);
     }
 
-    @GetMapping("/export")
-    public ResponseEntity<String> exportSequences() {
-        List<Sequence> sequences = sequenceRepository.findAll();
+    @PostMapping("/export")
+    public ResponseEntity<String> exportSequences(@RequestBody List<Long> ids) {
+        List<Sequence> sequences = sequenceRepository.findByIdIn(ids);
         StringBuilder sb = new StringBuilder();
         for (Sequence sequence : sequences) {
-            sb.append(">").append(sequence.getName()).append("\n");
-            sb.append(sequence.getSequence()).append("\n");
+            sb.append("ID: ").append(sequence.getId()).append("\n");
+            sb.append("Name: ").append(sequence.getName()).append("\n");
+            sb.append("Sequence: ").append(sequence.getSequence()).append("\n\n");
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
-        headers.setContentDispositionFormData("attachment", "sequences.fasta");
+        headers.setContentDispositionFormData("attachment", "sequences.txt");
         return new ResponseEntity<>(sb.toString(), headers, HttpStatus.OK);
     }
 }

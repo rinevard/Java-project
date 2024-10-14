@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface SequenceRepository extends JpaRepository<Sequence, Long> {
     List<Sequence> findByNameContainingOrSequenceContaining(String name, String sequence);
+    List<Sequence> findByIdIn(List<Long> ids);
 }

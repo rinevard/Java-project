@@ -49,6 +49,7 @@ public class SequenceParser {
             String currentName = null;
             
             while ((line = reader.readLine()) != null) {
+                line = line.trim();
                 if (line.startsWith(">")) {
                     if (currentName != null) {
                         Sequence sequence = new Sequence();
@@ -58,12 +59,12 @@ public class SequenceParser {
                         sequenceBuilder = new StringBuilder();
                     }
                     currentName = line.substring(1).trim();
-                } else {
-                    sequenceBuilder.append(line.trim());
+                } else if (!line.isEmpty()) {
+                    sequenceBuilder.append(line);
                 }
             }
             
-            if (currentName != null) {
+            if (currentName != null && sequenceBuilder.length() > 0) {
                 Sequence sequence = new Sequence();
                 sequence.setName(currentName);
                 sequence.setSequence(sequenceBuilder.toString());

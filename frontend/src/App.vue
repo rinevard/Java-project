@@ -2,8 +2,13 @@
   <div id="app">
     <h1>蛋白质序列数据管理系统</h1>
     <file-upload @file-uploaded="refreshData" />
-    <data-table :sequences="sequences" @export-data="exportData" />
     <search-bar @search="performSearch" />
+    <data-table
+      :sequences="sequences"
+      @export-data="exportData"
+      :key="searchKey"
+      ref="dataTable"
+    />
   </div>
 </template>
 
@@ -23,6 +28,7 @@ export default {
   data() {
     return {
       sequences: [],
+      searchKey: 0,
     };
   },
   methods: {
@@ -30,6 +36,7 @@ export default {
       try {
         const response = await axios.get("/api/sequences");
         this.sequences = response.data;
+        this.resetPageNum();
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -40,13 +47,20 @@ export default {
           `/api/sequences/search?query=${query}`
         );
         this.sequences = response.data;
+        this.resetPageNum();
       } catch (error) {
         console.error("Error searching data:", error);
       }
     },
-    async exportData() {
+    resetPageNum() {
+      this.searchKey += 1;
+      if (this.$refs.dataTable) {
+        this.$refs.dataTable.resetPage();
+      }
+    },
+    async exportData(ids) {
       try {
-        const response = await axios.get("/api/sequences/export", {
+        const response = await axios.post("/api/sequences/export", ids, {
           responseType: "blob",
         });
         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -72,5 +86,9 @@ export default {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.search-bar {
+  margin-bottom: 20px;
 }
 </style>
