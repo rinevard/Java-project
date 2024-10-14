@@ -41,7 +41,7 @@ public class SequenceParser {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\t", -1); // -1 保留空字段
                 if (parts.length != headers.length) {
-                    // 行的列数与表头不匹配，跳过或记录错误
+                    // 行的列数与表头不匹配，跳过
                     continue;
                 }
 
@@ -57,14 +57,14 @@ public class SequenceParser {
                                 try {
                                     sequence.setIndexNumber(Integer.parseInt(value));
                                 } catch (NumberFormatException e) {
-                                    sequence.setIndexNumber(null); // 或设置默认值
+                                    sequence.setIndexNumber(null);
                                 }
                                 break;
                             case "proteins":
                                 sequence.setProteins(value);
                                 break;
                             case "accessions":
-                                // 移除末尾的分号（如果有）并设置
+                                // 移除末尾的分号（如果有）
                                 if (value.endsWith(";")) {
                                     value = value.substring(0, value.length() - 1);
                                 }
@@ -83,11 +83,10 @@ public class SequenceParser {
                                 try {
                                     sequence.setOrgs(Integer.parseInt(value));
                                 } catch (NumberFormatException e) {
-                                    sequence.setOrgs(null); // 或设置默认值
+                                    sequence.setOrgs(null);
                                 }
                                 break;
                             default:
-                                // 其他字段可以忽略或记录
                                 break;
                         }
                     }
@@ -107,7 +106,6 @@ public class SequenceParser {
                                 sequence.setAnnotations(value);
                                 break;
                             default:
-                                // 其他字段可以忽略或记录
                                 break;
                         }
                     }
@@ -155,7 +153,7 @@ public class SequenceParser {
     private static List<Sequence> parseTxt(InputStream inputStream) throws IOException {
         List<Sequence> sequences = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            String header = reader.readLine(); // 读取表头
+            String header = reader.readLine();
             String[] columns = header.split("\t");
             int columnCount = columns.length;
 
