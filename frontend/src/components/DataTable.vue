@@ -3,6 +3,7 @@
     <table>
       <thead>
         <tr>
+          <!-- 表头 -->
           <th>ID</th>
           <th>Index</th>
           <th>Proteins</th>
@@ -14,13 +15,14 @@
         </tr>
       </thead>
       <tbody>
+        <!-- 遍历分页后的序列数据 -->
         <tr v-for="sequence in paginatedSequences" :key="sequence.id">
           <td>{{ sequence.id }}</td>
           <td>{{ sequence.indexNumber }}</td>
           <td>{{ sequence.proteins }}</td>
           <td>{{ sequence.accessions }}</td>
 
-          <!-- Sequences 字段 -->
+          <!-- Sequences -->
           <td>
             <span v-if="isTruncated('sequence', sequence)">
               {{ getDisplayText("sequence", sequence) }}
@@ -33,7 +35,7 @@
             </span>
           </td>
 
-          <!-- Annotations 字段 -->
+          <!-- Annotations -->
           <td>
             <span v-if="isTruncated('annotations', sequence)">
               {{ getDisplayText("annotations", sequence) }}
@@ -46,7 +48,7 @@
             </span>
           </td>
 
-          <!-- Interpros 字段 -->
+          <!-- Interpros -->
           <td>
             <span v-if="isTruncated('interpros', sequence)">
               {{ getDisplayText("interpros", sequence) }}
@@ -64,6 +66,7 @@
       </tbody>
     </table>
 
+    <!-- 分页 -->
     <div class="pageNum">
       <button @click="changePage(1)" :disabled="currentPage === 1">首页</button>
       <button
@@ -95,9 +98,19 @@
         末页
       </button>
     </div>
+
+    <!-- 导出按钮组 -->
     <div class="export-buttons">
-      <button @click="exportData('tsv')">导出为TSV</button>
-      <button @click="exportData('txt')">导出为TXT</button>
+      <div class="export-group">
+        <span>导出本页：</span>
+        <button @click="exportData('current', 'tsv')">TSV</button>
+        <button @click="exportData('current', 'txt')">TXT</button>
+      </div>
+      <div class="export-group">
+        <span>导出全部：</span>
+        <button @click="exportData('all', 'tsv')">TSV</button>
+        <button @click="exportData('all', 'txt')">TXT</button>
+      </div>
     </div>
   </div>
 </template>
@@ -115,7 +128,7 @@ export default {
     return {
       currentPage: 1,
       itemsPerPage: 12,
-      expandedCells: {},
+      expandedCells: {}, // 用于存储展开状态的对象
       truncatableFields: {
         sequence: 50,
         annotations: 50,
@@ -127,6 +140,7 @@ export default {
     totalPages() {
       return Math.ceil(this.sequences.length / this.itemsPerPage);
     },
+    // 获取当前页的数据
     paginatedSequences() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
@@ -165,9 +179,13 @@ export default {
         this.currentPage = page;
       }
     },
-    exportData(format) {
-      const ids = this.paginatedSequences.map((seq) => seq.id);
-      this.$emit("export-data", { ids, format });
+    exportData(type, format) {
+      if (type === "current") {
+        const ids = this.paginatedSequences.map((seq) => seq.id);
+        this.$emit("export-data", { type, ids, format });
+      } else if (type === "all") {
+        this.$emit("export-data", { type, format });
+      }
     },
     resetPage() {
       this.currentPage = 1;
@@ -247,6 +265,7 @@ export default {
 </script>
 
 <style scoped>
+/* 数据表格样式 */
 .data-table {
   margin-top: 20px;
 }
@@ -272,6 +291,7 @@ td button {
   cursor: pointer;
 }
 
+/* 分页控件样式 */
 .pageNum {
   margin-top: 10px;
   display: flex;
@@ -294,8 +314,20 @@ td button {
   margin: 0 5px;
 }
 
+/* 导出按钮样式 */
 .export-buttons {
   margin-top: 20px;
+  display: flex;
+  gap: 20px;
+}
+
+.export-group {
+  display: flex;
+  align-items: center;
+}
+
+.export-group span {
+  margin-right: 10px;
 }
 
 .export-buttons button {
