@@ -50,11 +50,13 @@ export default {
       progressInterval: null, // 更新进度条的定时器
       loadingText: "",
       currentSearchQuery: "",
+      currentSearchCategory: "", // 新增的当前搜索类别
     };
   },
   methods: {
     async refreshData() {
       this.currentSearchQuery = "";
+      this.currentSearchCategory = "";
       this.startLoading();
       try {
         const response = await axios.get("/api/sequences");
@@ -66,13 +68,24 @@ export default {
         this.stopLoading();
       }
     },
-    async performSearch(query) {
+    async performSearch({ query, category }) {
       this.startLoading();
       this.currentSearchQuery = query;
+      this.currentSearchCategory = category;
       try {
-        const response = await axios.get(
-          `/api/sequences/search?query=${encodeURIComponent(query)}`
-        );
+        let response;
+        if (category) {
+          response = await axios.get(
+            `/api/sequences/search?query=${encodeURIComponent(
+              query
+            )}&category=${encodeURIComponent(category)}`
+          );
+        } else {
+          // 如果没有选择类别，默认搜索所有支持的类别
+          response = await axios.get(
+            `/api/sequences/search?query=${encodeURIComponent(query)}`
+          );
+        }
         this.sequences = response.data;
         this.resetPageNum();
       } catch (error) {
@@ -89,39 +102,34 @@ export default {
     },
     async exportData({ type, ids, format }) {
       try {
-        let endpoint;
-        let filename;
+        let exportRequest = {
+          type, // "current" 或 "all"
+          ids: type === "current" ? ids : null,
+          format, // "tsv" 或 "txt"
+          query: this.currentSearchQuery,
+          category: this.currentSearchCategory,
+        };
 
-        if (type === "current") {
-          // 导出当前页数据
-          if (format === "txt") {
-            endpoint = "/api/sequences/export-txt";
-            filename = "sequences_current.txt";
-          } else {
-            endpoint = "/api/sequences/export";
-            filename = "sequences_current.tsv";
-          }
-          const response = await axios.post(endpoint, ids, {
+        const response = await axios.post(
+          "/api/sequences/export-data",
+          exportRequest,
+          {
             responseType: "blob",
-          });
-          this.downloadFile(response.data, filename);
-        } else if (type === "all") {
-          if (format === "txt") {
-            endpoint = "/api/sequences/export-all-txt";
-            filename = "sequences_all.txt";
-          } else {
-            endpoint = "/api/sequences/export-all";
-            filename = "sequences_all.tsv";
           }
-          const response = await axios.post(
-            endpoint,
-            { query: this.currentSearchQuery },
-            {
-              responseType: "blob",
-            }
-          );
-          this.downloadFile(response.data, filename);
+        );
+
+        let filename = "";
+        if (type === "current") {
+          filename =
+            format === "txt"
+              ? "sequences_current.txt"
+              : "sequences_current.tsv";
+        } else if (type === "all") {
+          filename =
+            format === "txt" ? "sequences_all.txt" : "sequences_all.tsv";
         }
+
+        this.downloadFile(response.data, filename);
       } catch (error) {
         console.error("Error exporting data:", error);
         alert("导出数据失败");
@@ -174,10 +182,6 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-}
-
-.search-bar {
-  margin-bottom: 20px;
 }
 
 /* 加载容器样式 */
