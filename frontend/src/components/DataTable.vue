@@ -4,18 +4,66 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>序列名</th>
-          <th>序列</th>
+          <th>Index</th>
+          <th>Proteins</th>
+          <th>Accessions</th>
+          <th>Sequences</th>
+          <th>Annotations</th>
+          <th>Interpros</th>
+          <th>Orgs</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="sequence in paginatedSequences" :key="sequence.id">
           <td>{{ sequence.id }}</td>
-          <td>{{ sequence.name }}</td>
-          <td>{{ sequence.sequence }}</td>
+          <td>{{ sequence.indexNumber }}</td>
+          <td>{{ sequence.proteins }}</td>
+          <td>{{ sequence.accessions }}</td>
+
+          <!-- Sequences 字段 -->
+          <td>
+            <span v-if="isTruncated('sequence', sequence)">
+              {{ getDisplayText("sequence", sequence) }}
+              <button @click="toggleExpand(sequence.id, 'sequence')">
+                {{ isExpanded("sequence", sequence) ? "折叠" : "展开" }}
+              </button>
+            </span>
+            <span v-else>
+              {{ sequence.sequence }}
+            </span>
+          </td>
+
+          <!-- Annotations 字段 -->
+          <td>
+            <span v-if="isTruncated('annotations', sequence)">
+              {{ getDisplayText("annotations", sequence) }}
+              <button @click="toggleExpand(sequence.id, 'annotations')">
+                {{ isExpanded("annotations", sequence) ? "折叠" : "展开" }}
+              </button>
+            </span>
+            <span v-else>
+              {{ formatAnnotations(sequence.annotations) }}
+            </span>
+          </td>
+
+          <!-- Interpros 字段 -->
+          <td>
+            <span v-if="isTruncated('interpros', sequence)">
+              {{ getDisplayText("interpros", sequence) }}
+              <button @click="toggleExpand(sequence.id, 'interpros')">
+                {{ isExpanded("interpros", sequence) ? "折叠" : "展开" }}
+              </button>
+            </span>
+            <span v-else>
+              {{ formatInterpros(sequence.interpros) }}
+            </span>
+          </td>
+
+          <td>{{ sequence.orgs }}</td>
         </tr>
       </tbody>
     </table>
+
     <div class="pageNum">
       <button @click="changePage(1)" :disabled="currentPage === 1">首页</button>
       <button
@@ -24,16 +72,10 @@
       >
         上一页
       </button>
-      <template v-for="(page, index) in displayedPages">
-        <span
-          v-if="page === '...'"
-          :key="'ellipsis' + index"
-          class="ellipsis"
-          >{{ page }}</span
-        >
+      <template v-for="(page, index) in displayedPages" :key="'page' + index">
+        <span v-if="page === '...'" class="ellipsis">{{ page }}</span>
         <button
           v-else
-          :key="'page' + page"
           @click="changePage(page)"
           :class="{ active: currentPage === page }"
         >
@@ -53,7 +95,10 @@
         末页
       </button>
     </div>
-    <button @click="exportData">导出数据</button>
+    <div class="export-buttons">
+      <button @click="exportData('tsv')">导出为TSV</button>
+      <button @click="exportData('txt')">导出为TXT</button>
+    </div>
   </div>
 </template>
 
@@ -61,12 +106,21 @@
 export default {
   name: "DataTable",
   props: {
-    sequences: Array,
+    sequences: {
+      type: Array,
+      required: true,
+    },
   },
   data() {
     return {
       currentPage: 1,
       itemsPerPage: 12,
+      expandedCells: {},
+      truncatableFields: {
+        sequence: 50,
+        annotations: 50,
+        interpros: 50,
+      },
     };
   },
   computed: {
@@ -107,14 +161,81 @@ export default {
   },
   methods: {
     changePage(page) {
-      this.currentPage = page;
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+      }
     },
-    exportData() {
-      const ids = this.sequences.map((seq) => seq.id);
-      this.$emit("export-data", ids);
+    exportData(format) {
+      const ids = this.paginatedSequences.map((seq) => seq.id);
+      this.$emit("export-data", { ids, format });
     },
     resetPage() {
       this.currentPage = 1;
+    },
+    formatAnnotations(annotations) {
+      if (!annotations) return "";
+      try {
+        const parsed = JSON.parse(annotations.replace(/'/g, '"'));
+        return parsed.join(", ");
+      } catch (e) {
+        return annotations;
+      }
+    },
+    formatInterpros(interpros) {
+      if (!interpros) return "";
+      try {
+        const parsed = JSON.parse(interpros.replace(/'/g, '"'));
+        return parsed.join(", ");
+      } catch (e) {
+        return interpros;
+      }
+    },
+    isTruncated(field, sequence) {
+      const maxLength = this.truncatableFields[field];
+      if (!maxLength) return false;
+      let text;
+      if (field === "sequence") {
+        text = sequence.sequence;
+      } else if (field === "annotations") {
+        text = this.formatAnnotations(sequence.annotations);
+      } else if (field === "interpros") {
+        text = this.formatInterpros(sequence.interpros);
+      } else {
+        text = "";
+      }
+      return text.length > maxLength;
+    },
+    getDisplayText(field, sequence) {
+      const maxLength = this.truncatableFields[field];
+      let text;
+      if (field === "sequence") {
+        text = sequence.sequence;
+      } else if (field === "annotations") {
+        text = this.formatAnnotations(sequence.annotations);
+      } else if (field === "interpros") {
+        text = this.formatInterpros(sequence.interpros);
+      } else {
+        text = "";
+      }
+
+      if (this.isExpanded(field, sequence)) {
+        return text;
+      } else {
+        return text.slice(0, maxLength) + "...";
+      }
+    },
+    isExpanded(field, sequence) {
+      return (
+        this.expandedCells[sequence.id] &&
+        this.expandedCells[sequence.id][field]
+      );
+    },
+    toggleExpand(sequenceId, field) {
+      if (!this.expandedCells[sequenceId]) {
+        this.expandedCells[sequenceId] = {};
+      }
+      this.expandedCells[sequenceId][field] =
+        !this.expandedCells[sequenceId][field];
     },
   },
   watch: {
@@ -127,43 +248,58 @@ export default {
 
 <style scoped>
 .data-table {
-  margin-bottom: 20px;
+  margin-top: 20px;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+  word-wrap: break-word;
 }
+
 th,
 td {
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   padding: 8px;
   text-align: left;
 }
-th {
-  background-color: #f2f2f2;
+
+td button {
+  margin-left: 5px;
+  padding: 2px 5px;
+  font-size: 12px;
+  cursor: pointer;
 }
+
 .pageNum {
-  margin-top: 20px;
+  margin-top: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .pageNum button {
   margin: 0 5px;
   padding: 5px 10px;
-  background-color: #f2f2f2;
-  border: 1px solid #ddd;
   cursor: pointer;
 }
-.pageNum button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.pageNum button.active {
-  background-color: #4caf50;
+
+.pageNum .active {
+  background-color: #007bff;
   color: white;
 }
+
 .ellipsis {
   margin: 0 5px;
+}
+
+.export-buttons {
+  margin-top: 20px;
+}
+
+.export-buttons button {
+  margin-right: 10px;
+  padding: 5px 10px;
 }
 </style>

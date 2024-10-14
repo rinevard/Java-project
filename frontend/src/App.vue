@@ -58,19 +58,31 @@ export default {
         this.$refs.dataTable.resetPage();
       }
     },
-    async exportData(ids) {
+    async exportData({ ids, format }) {
       try {
-        const response = await axios.post("/api/sequences/export", ids, {
+        let endpoint;
+        let filename;
+        if (format === "txt") {
+          endpoint = "/api/sequences/export-txt";
+          filename = "sequences.txt";
+        } else {
+          // 默认导出为 TSV
+          endpoint = "/api/sequences/export";
+          filename = "sequences.tsv";
+        }
+        const response = await axios.post(endpoint, ids, {
           responseType: "blob",
         });
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", "sequences.txt");
+        link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link); // 清理 DOM
       } catch (error) {
         console.error("Error exporting data:", error);
+        alert("导出数据失败");
       }
     },
   },
@@ -83,7 +95,7 @@ export default {
 <style>
 #app {
   font-family: Arial, sans-serif;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
