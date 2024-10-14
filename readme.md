@@ -59,9 +59,11 @@ backend/
 
 4. 借助 vue 建立了一个前端操作界面
 
-## 3. 编译源程序的步骤
+## 3. 编译和运行步骤
 
-### 3.1 后端编译
+### 3.1 后端
+
+#### 编译
 
 1. 确保您的系统中安装了 Java 11 和 Maven。
 
@@ -79,31 +81,7 @@ backend/
 
 4. 编译成功后，在`target`目录下会生成一个 JAR 文件，名为`protein-sequence-management-0.0.1-SNAPSHOT.jar`。
 
-### 3.2 前端编译
-
-1. 确保您的系统中安装了 Node.js 和 npm。
-
-2. 打开命令行，进入项目的 frontend 目录：
-
-   ```
-   cd path/to/protein-sequence-management/frontend
-   ```
-
-3. 安装依赖：
-
-   ```
-   npm install
-   ```
-
-4. 构建生产版本：
-
-   ```
-   npm run build
-   ```
-
-5. 构建完成后，在`dist`目录下会生成前端静态文件。
-
-## 4. 运行 Jar 的步骤
+#### 运行
 
 1. 确保您已经完成了后端的编译步骤。
 
@@ -119,13 +97,39 @@ backend/
    java -jar protein-sequence-management-0.0.1-SNAPSHOT.jar
    ```
 
-4. 应用程序将在默认端口 8080 上启动。
+4. 后端将在默认端口 8080 上启动。
 
-## 5. 测试已实现功能的步骤
+### 3.2 前端
+
+#### 编译和运行
+
+1. 确保您的系统中安装了 Node.js 和 npm。
+
+2. 打开命令行，进入项目的 frontend 目录：
+
+   ```
+   cd path/to/protein-sequence-management/frontend
+   ```
+
+3. 安装依赖：
+
+   ```
+   npm install
+   ```
+
+4. 启动前端开发服务器：
+
+   ```
+   npm run serve
+   ```
+
+5. 前端开发服务器将启动。由于 http://localhost:8080 被后端占用，前端通常在 http://localhost:8081 上运行（如果该端口被占用，可能会使用其他端口）。
+
+## 4. 测试已实现功能的步骤
 
 1. 确保后端已经启动并在运行。
 
-2. 打开浏览器，访问 `http://localhost:8080`。
+2. 打开浏览器，访问 `http://localhost:8081`。
 
 3. 测试文件上传功能：
 
@@ -148,7 +152,7 @@ backend/
 7. 测试导出功能：
    - 尝试在搜索栏中输入蛋白质序列的部分序列，再导出数据。
 
-## 6. 使用的额外依赖包
+## 5. 使用的额外依赖包
 
 除了 Spring Boot 的标准库外，本项目还使用了以下额外的依赖：
 
@@ -158,7 +162,7 @@ backend/
 
 这些依赖已经在 pom.xml 文件中配置，无需额外安装。
 
-## 7. 注意事项
+## 6. 注意事项
 
 - 确保在运行应用程序之前，SQLite 数据库文件 (sequences.db) 已经存在于正确的位置。
 - 如果遇到端口冲突，可以在`application.properties`文件中修改`server.port`属性来更改后端服务的端口。
